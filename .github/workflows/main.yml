@@ -35,22 +35,23 @@ jobs:
           terraform_version: 0.12.29
 
       - name: Terraform Init
-        run: cd ./terraform/
-
-      - name: Terraform Init
         run: terraform init
+        working-directory: ./terraform/
 
       - name: Terraform Format
         run: terraform fmt -check
+        working-directory: ./terraform/
 
       # Generates an execution plan for Terraform
       - name: Terraform Plan
         run: terraform plan
+        working-directory: ./terraform/
 
         # On push to master, build or change infrastructure according to Terraform configuration files
       - name: Terraform Apply
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
         run: terraform apply -auto-approve
+        working-directory: ./terraform/
 
       - name: Setup app deploy
         run: bash scripts/setup.sh
