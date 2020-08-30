@@ -106,9 +106,9 @@ league = League(
 )
 
 st.title(f"Karen's Fantasy Outlook for {league.settings.name} ({year})")
+st.image(LOGO_URL)
 
 # Power rankings
-st.image(LOGO_URL)
 st.write("## Power Rankings*")
 st.write(  # noqa:E501
     """
@@ -163,3 +163,5 @@ with st.spinner(f"Crunching {team.team_name}'s numbers... hang tight!"):
     team_df = build_team_df(team, league.current_week)
 
 st.area_chart(team_df)
+
+st.write("More analysis coming soon!")
