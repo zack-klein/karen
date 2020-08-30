@@ -1,0 +1,3 @@
+streamlit
+espn_api
+pandas
