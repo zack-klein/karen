@@ -21,15 +21,38 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      
-      - name: Setup
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 0.12.29
+
+      - name: Terraform Init
+        run: cd ./terraform/
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      # Generates an execution plan for Terraform
+      - name: Terraform Plan
+        run: terraform plan
+
+        # On push to master, build or change infrastructure according to Terraform configuration files
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+
+      - name: Setup app deploy
         run: bash scripts/setup.sh
 
       # Runs a single command using the runners shell
