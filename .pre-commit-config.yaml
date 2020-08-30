@@ -12,3 +12,7 @@ repos:
     sha: v1.0.4
     hooks:
     - id: python-bandit-vulnerability-check
+-   repo: git://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.31.0
+    hooks:
+    - id: terraform_fmt
