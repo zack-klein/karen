@@ -1,5 +1,5 @@
 set -ex
 
 flake8
-black . --check
+black . --check --line-length 79
 bandit . -r -lll
