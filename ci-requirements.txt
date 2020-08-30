@@ -2,4 +2,3 @@ awscli
 flake8
 black
 bandit
-setuptools
