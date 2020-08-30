@@ -163,6 +163,3 @@ with st.spinner(f"Crunching {team.team_name}'s numbers... hang tight!"):
     team_df = build_team_df(team, league.current_week)
 
 st.area_chart(team_df)
-
-
-st.write("More analysis coming soon!")

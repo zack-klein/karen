@@ -35,5 +35,5 @@ sudo $SUPERVISOR_PATH -c $SUPERVISOR_CONF_PATH
 # Set up a cron job so we don't need to tear down the instance to get a new version of the code
 LOCAL_CRON_PATH="$LOCAL_BASE_PATH/sync_app.sh"
 LOCAL_CRON_LOG_PATH="$LOCAL_BASE_PATH/log_sync_app.log"
-echo "* * * * * aws s3 sync s3://$BUCKET/$APP_KEY $LOCAL_APP_PATH --exact-timestamps >> $LOCAL_CRON_LOG_PATH" >> $LOCAL_CRON_PATH
+echo "* * * * * aws s3 cp s3://$BUCKET/$APP_KEY $LOCAL_APP_PATH &>> $LOCAL_CRON_LOG_PATH" >> $LOCAL_CRON_PATH
 crontab $LOCAL_CRON_PATH
