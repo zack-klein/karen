@@ -104,7 +104,7 @@ league = League(
     swid=SECRETS["espn_swid"],
 )
 
-st.title(f"{league.settings.name} Power Rankings ({year})")
+st.title(f"Karen's Fantasy Outlook for {league.settings.name} ({year})")
 
 # Power rankings
 
