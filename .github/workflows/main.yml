@@ -48,10 +48,10 @@ jobs:
         working-directory: ./terraform/
 
         # On push to master, build or change infrastructure according to Terraform configuration files
-      - name: Terraform Apply
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        run: terraform apply -auto-approve
-        working-directory: ./terraform/
+      # - name: Terraform Apply
+      #   if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+      #   run: terraform apply -auto-approve
+      #   working-directory: ./terraform/
 
       - name: Setup app deploy
         run: bash scripts/setup.sh
