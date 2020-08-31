@@ -246,7 +246,7 @@ def build_projected_vs_actual_chart(df):
 LOGO_URL = "https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606"  # noqa:E501
 SECRETS = get_secrets()
 
-YEARS = [2019, 2018, 2017, 2016, 2015]
+YEARS = [2020, 2019, 2018, 2017, 2016, 2015]
 
 year = st.sidebar.selectbox("Year:", YEARS)
 
