@@ -149,9 +149,9 @@ around_the_league_df = pd.DataFrame([row], columns=columns)
 around_the_league_df.set_index("Index", inplace=True)
 st.table(around_the_league_df)
 
-# Team journies
+# Team Journeys
 
-st.write("## Team Journies")
+st.write("## Team Journeys")
 TEAMS = [t.team_name for t in league.teams]
 team_name = st.selectbox("Team:", TEAMS)
 team = [t for t in league.teams if t.team_name == team_name][0]
