@@ -303,44 +303,51 @@ around_the_league_df = pd.DataFrame([row], columns=columns)
 around_the_league_df.set_index("Index", inplace=True)
 st.table(around_the_league_df)
 
-# Team Journeys
 
-st.write("## Team Journeys")
-TEAMS = [t.team_name for t in league.teams]
-team_name = st.selectbox("Team:", TEAMS)
-team = [t for t in league.teams if t.team_name == team_name][0]
-st.write(f"### {team.team_name} ({team.wins}-{team.losses})")  # noqa:E501
-# with st.spinner(f"Crunching {team.team_name}'s numbers... hang tight!"):
-score_df = build_score_df(team, league.current_week)
-team_df = build_team_df(team, league.current_week, league)
+if year >= 2019:
 
-# Build a paragraph of analysis.
-unexpected_df = team_df[team_df["Projected Result"] != team_df["Result"]]
-unexpected_outcomes = len(unexpected_df)
-unexpected_wins = len(unexpected_df[unexpected_df["Result"] == "W"])
-unexpected_losses = len(unexpected_df[unexpected_df["Result"] == "L"])
+    # Team Journeys
 
-if unexpected_wins > unexpected_losses:
-    favored = "helped"
+    st.write("## Team Journeys")
+    TEAMS = [t.team_name for t in league.teams]
+    team_name = st.selectbox("Team:", TEAMS)
+    team = [t for t in league.teams if t.team_name == team_name][0]
+    st.write(f"### {team.team_name} ({team.wins}-{team.losses})")  # noqa:E501
+    # with st.spinner(f"Crunching {team.team_name}'s numbers... hang tight!"):
+    score_df = build_score_df(team, league.current_week)
+    team_df = build_team_df(team, league.current_week, league)
 
-elif unexpected_wins < unexpected_losses:
-    favored = "hurt"
+    # Build a paragraph of analysis.
+    unexpected_df = team_df[team_df["Projected Result"] != team_df["Result"]]
+    unexpected_outcomes = len(unexpected_df)
+    unexpected_wins = len(unexpected_df[unexpected_df["Result"] == "W"])
+    unexpected_losses = len(unexpected_df[unexpected_df["Result"] == "L"])
+
+    if unexpected_wins > unexpected_losses:
+        favored = "helped"
+
+    elif unexpected_wins < unexpected_losses:
+        favored = "hurt"
+
+    else:
+        favored = "neither helped nor hurt"
+
+    TEXT = f"""
+        {team.team_name} currently has a record of **{team.wins}** wins and
+        **{team.losses}** losses. **{unexpected_outcomes}** of these
+        {team.wins + team.losses} outcomes can be considered unexpected
+        (the actual result was different than the projected result), with
+        **{unexpected_wins}** unexpected wins and **{unexpected_losses}**
+        unexpected losses.
+
+        This team has generally been **{favored}** by unexpected outcomes this
+        season.
+    """
+    st.write(TEXT)
+    fig = build_projected_vs_actual_chart(team_df)
+
+    st.write(fig)
 
 else:
-    favored = "neither helped nor hurt"
-
-TEXT = f"""
-    {team.team_name} currently has a record of **{team.wins}** wins and
-    **{team.losses}** losses. **{unexpected_outcomes}** of these
-    {team.wins + team.losses} outcomes can be considered unexpected
-    (the actual result was different than the projected result), with
-    **{unexpected_wins}** unexpected wins and **{unexpected_losses}**
-    unexpected losses.
-
-    This team has generally been **{favored}** by unexpected outcomes this
-    season.
-"""
-st.write(TEXT)
-fig = build_projected_vs_actual_chart(team_df)
-
-st.write(fig)
+    st.write("## Team Journeys")
+    st.write("Team journeys are only available for 2019 and on!")
