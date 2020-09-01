@@ -387,7 +387,7 @@ def build_team_summary(player_df, top=5, week_range=None):
     return league_overview_df
 
 
-def build_player_summary(player_df, top=5, week_range=None):
+def build_player_summary(player_df, top=5, week_range=None, on_teams=None):
     """
     Build a clean dataframe of player level information.
     """
@@ -397,6 +397,9 @@ def build_player_summary(player_df, top=5, week_range=None):
             (player_df["Week"] >= week_range[0])
             & (player_df["Week"] <= week_range[1])
         ]
+
+    if on_teams:
+        player_df = player_df[player_df["Team"].isin(on_teams)]
 
     # Most points for a certain player
     most_points = (
@@ -457,6 +460,7 @@ league = League(
     espn_s2=SECRETS["espn_s2"],
     swid=SECRETS["espn_swid"],
 )
+TEAMS = [t.team_name for t in league.teams]
 
 st.title(f"Karen's Fantasy Outlook for {league.settings.name} ({year})")
 st.image(LOGO_URL)
@@ -524,15 +528,19 @@ if year >= 2019:
     else:
         for_weeks_players = (week_min, week_max)
 
+    on_teams = st.multiselect("For teams:", TEAMS)
+
     players_summary = build_player_summary(
-        player_df, top=top_players, week_range=for_weeks_players
+        player_df,
+        top=top_players,
+        week_range=for_weeks_players,
+        on_teams=on_teams,
     )
     st.table(players_summary)
 
     # Team Journeys
 
     st.write("## Team Journeys")
-    TEAMS = [t.team_name for t in league.teams]
     team_name = st.selectbox("Team:", TEAMS)
     team = [t for t in league.teams if t.team_name == team_name][0]
     st.write(f"### {team.team_name} ({team.wins}-{team.losses})")  # noqa:E501
