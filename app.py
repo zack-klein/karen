@@ -10,7 +10,7 @@ from espn_api.football import League
 
 def get_secrets(secret_name="fantasy-football-secrets", region="us-east-1"):
     session = boto3.session.Session()
-    client = session.client(service_name="secretsmanager", region_name=region,)
+    client = session.client(service_name="secretsmanager", region_name=region)
 
     response = client.get_secret_value(SecretId=secret_name)
     secret_string = response.get("SecretString", "{}")
@@ -243,6 +243,205 @@ def build_projected_vs_actual_chart(df):
     return fig
 
 
+@st.cache(
+    suppress_st_warning=True,
+    show_spinner=False,
+    hash_funcs={League: lambda _: None},
+)
+def build_player_scores(current_week, league):
+    """
+    Get a dataframe of the league's players performance.
+    """
+    columns = [
+        "Index",
+        "Week",
+        "Player Name",
+        "Points",
+        "Projected Points",
+        "Projection Diff",
+        "Position",
+        "Slot",
+        "Team",
+        "Team ID",
+    ]
+    players = []
+
+    bar = st.progress(0.0)
+
+    for i in range(1, current_week + 1):
+        print(f"Building players for week: {i}...")
+        progress = i / len([i for i in range(current_week)])
+        bar.progress(progress)
+
+        box_scores = league.box_scores(week=i)
+
+        for box_score in box_scores:
+
+            home_exists = True
+            away_exists = True
+
+            if box_score.away_team == 0:
+                away_exists = False
+
+            elif box_score.home_team == 0:
+                home_exists = False
+
+            if away_exists:
+
+                for player in box_score.away_lineup:
+                    row = [
+                        "",
+                        i,
+                        player.name,
+                        player.points,
+                        player.projected_points,
+                        player.points - player.projected_points,
+                        player.position,
+                        player.slot_position,
+                        box_score.away_team.team_name,
+                        box_score.away_team.team_id,
+                    ]
+
+                    players.append(row)
+
+            elif home_exists:
+
+                for player in box_score.home_lineup:
+                    row = [
+                        "",
+                        i,
+                        player.name,
+                        player.points,
+                        player.projected_points,
+                        player.points - player.projected_points,
+                        player.position,
+                        player.slot_position,
+                        box_score.home_team.team_name,
+                        box_score.home_team.team_id,
+                    ]
+
+                    players.append(row)
+
+    df = pd.DataFrame(players, columns=columns)
+    df.set_index("Index", inplace=True)
+    return df
+
+
+def build_team_summary(player_df, top=5, week_range=None):
+    """
+    Build a clean dataframe of the team summary.
+    """
+
+    if week_range:
+        player_df = player_df[
+            (player_df["Week"] >= week_range[0])
+            & (player_df["Week"] <= week_range[1])
+        ]
+
+    # Bench points
+    bench_points = (
+        player_df[player_df["Slot"] == "BE"][["Team", "Points"]]
+        .groupby(["Team"])
+        .sum()
+        .sort_values("Points", ascending=False)
+    )
+
+    # Projections
+    projections = (
+        player_df[player_df["Slot"] != "BE"][["Team", "Projection Diff"]]
+        .groupby(["Team"])
+        .sum()
+        .sort_values("Projection Diff", ascending=False)
+    )
+
+    rows = []
+
+    for i in range(0, top):
+
+        from_bottom = len(projections) - 1 - i
+
+        most_over_projected = f"{projections.index.values[i]} ({round(projections['Projection Diff'][i], 2)})"  # noqa:E501
+        least_over_projected = f"{projections.index.values[from_bottom]} ({round(projections['Projection Diff'][from_bottom], 2)})"  # noqa:E501
+        most_points_on_bench = f"{bench_points.index.values[i]} ({round(bench_points['Points'][i], 2)})"  # noqa:E501
+        least_points_on_bench = f"{bench_points.index.values[from_bottom]} ({round(bench_points['Points'][from_bottom], 2)})"  # noqa:E501
+
+        row = [
+            i + 1,
+            most_over_projected,
+            least_over_projected,
+            most_points_on_bench,
+            least_points_on_bench,
+        ]
+        rows.append(row)
+
+    headers = [
+        "Rank",
+        "Most Over Projected",
+        "Most Under Projected",
+        "Most Points Left on Bench",
+        "Least Points left on Bench",
+    ]
+
+    league_overview_df = pd.DataFrame(rows, columns=headers)
+    league_overview_df.set_index("Rank", inplace=True)
+    return league_overview_df
+
+
+def build_player_summary(player_df, top=5, week_range=None):
+    """
+    Build a clean dataframe of player level information.
+    """
+
+    if week_range:
+        player_df = player_df[
+            (player_df["Week"] >= week_range[0])
+            & (player_df["Week"] <= week_range[1])
+        ]
+
+    # Most points for a certain player
+    most_points = (
+        player_df[["Player Name", "Points"]]
+        .groupby("Player Name")
+        .sum()
+        .sort_values("Points", ascending=False)
+    )
+
+    # Beat the projection most often
+    beat_projection = (
+        player_df[["Player Name", "Projection Diff"]]
+        .groupby("Player Name")
+        .sum()
+        .sort_values("Projection Diff", ascending=False)
+    )
+
+    headers = [
+        "Rank",
+        "Most Points",
+        "Most Under Projected",
+        "Most Over Projected",
+    ]
+    rows = []
+
+    for i in range(0, top):
+
+        from_bottom = len(most_points) - 1 - i
+        most_points_total = f"{most_points.index.values[i]} ({round(most_points['Points'][i], 2)})"  # noqa:E501
+        most_over_projected = f"{beat_projection.index.values[i]} ({round(beat_projection['Projection Diff'][i], 2)})"  # noqa:E501
+        most_under_projected = f"{beat_projection.index.values[from_bottom]} ({round(beat_projection['Projection Diff'][from_bottom], 2)})"  # noqa:E501
+
+        row = [
+            i + 1,
+            most_points_total,
+            most_over_projected,
+            most_under_projected,
+        ]
+        rows.append(row)
+
+    df = pd.DataFrame(rows, columns=headers)
+    df.set_index("Rank", inplace=True)
+    return df
+
+
 LOGO_URL = "https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606"  # noqa:E501
 SECRETS = get_secrets()
 
@@ -280,31 +479,55 @@ power_rankings_df = build_power_rankings_df(power_rankings)
 
 st.table(power_rankings_df)
 
-# Around the league
-
-st.write("## Around the league")
-columns = [
-    "Index",
-    "Top Scorer",
-    "Least Scorer",
-    "Most Scored Against",
-    "Top Score Week",
-    "Least Score Week",
-]
-row = [
-    "",
-    f"{league.top_scorer().team_name} ({league.top_scorer().points_for})",
-    f"{league.least_scorer().team_name} ({league.least_scorer().points_for})",
-    f"{league.most_points_against().team_name} ({league.most_points_against().points_for})",  # noqa:E501
-    f"{league.top_scored_week()[0].team_name} ({league.top_scored_week()[1]})",
-    f"{league.least_scored_week()[0].team_name} ({league.least_scored_week()[1]})",  # noqa:E501
-]
-around_the_league_df = pd.DataFrame([row], columns=columns)
-around_the_league_df.set_index("Index", inplace=True)
-st.table(around_the_league_df)
-
-
 if year >= 2019:
+
+    # Around the league
+    num_teams = [i + 1 for i, _ in enumerate(league.teams)]
+    num_weeks = [i + 1 for i in range(league.current_week)]
+
+    st.write("## Around the league")
+    player_df = build_player_scores(league.current_week, league)
+
+    # Team level stats
+    st.write("### Team Level Stats")
+    week_min = min(num_weeks)
+    week_max = max(num_weeks)
+    top_teams = 3
+
+    if week_min < week_max:
+        for_weeks_teams = st.slider(
+            "For weeks:",
+            min_value=week_min,
+            max_value=max(num_weeks),
+            value=(week_min, week_max),
+            key="weeks-teams",
+        )
+    else:
+        for_weeks_teams = (week_min, week_max)
+
+    team_summary = build_team_summary(
+        player_df, top=top_teams, week_range=for_weeks_teams
+    )
+    st.table(team_summary)
+
+    st.write("### Player Level Stats")
+
+    top_players = 10
+    if week_min < week_max:
+        for_weeks_players = st.slider(
+            "For weeks:",
+            min_value=week_min,
+            max_value=max(num_weeks),
+            value=(week_min, week_max),
+            key="weeks-players",
+        )
+    else:
+        for_weeks_players = (week_min, week_max)
+
+    players_summary = build_player_summary(
+        player_df, top=top_players, week_range=for_weeks_players
+    )
+    st.table(players_summary)
 
     # Team Journeys
 
@@ -349,5 +572,7 @@ if year >= 2019:
     st.write(fig)
 
 else:
-    st.write("## Team Journeys")
-    st.write("Team journeys are only available for 2019 and on!")
+    st.write(
+        "Around the league and team journeys are only available for 2019 and "
+        "on!"
+    )
