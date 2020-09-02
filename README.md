@@ -40,3 +40,15 @@ This can be fixed by re-installing protobuf:
 ```bash
 pip install python3-protobuf
 ```
+
+## Run tests locally
+
+```bash
+bash scripts/test.sh
+```
+
+OR:
+
+```bash
+python -m pytest -s
+```
