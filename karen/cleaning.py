@@ -291,7 +291,7 @@ def build_player_scores(current_week, league):
 
                     players.append(row)
 
-            elif home_exists:
+            if home_exists:
 
                 for player in box_score.home_lineup:
                     row = [
@@ -311,10 +311,11 @@ def build_player_scores(current_week, league):
 
     df = pd.DataFrame(players, columns=columns)
     df.set_index("Index", inplace=True)
+    bar.empty()
     return df
 
 
-def build_team_summary(player_df, top=5, week_range=None):
+def build_team_summary(player_df, top=3, week_range=None):
     """
     Build a clean dataframe of the team summary.
     """
@@ -374,7 +375,7 @@ def build_team_summary(player_df, top=5, week_range=None):
     return league_overview_df
 
 
-def build_player_summary(player_df, top=5, week_range=None, on_teams=None):
+def build_player_summary(player_df, top=10, week_range=None, on_teams=None):
     """
     Build a clean dataframe of player level information.
     """

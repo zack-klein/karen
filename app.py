@@ -1,19 +1,33 @@
 import streamlit as st
 
-from karen import utils, cleaning
+from karen import utils, cleaning, constant
 
 
-LOGO_URL = "https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606"  # noqa:E501
-YEARS = [2020, 2019]
+# Global configs - should never really change
+YEARS = constant.SUPPORTED_YEARS
+LOGO_URL = constant.LOGO_URL
 
+# User-level settings - should change with every user/session in a browser.
 year = st.sidebar.selectbox("Year:", YEARS)
 league = utils.get_league(year)
-TEAMS = [t.team_name for t in league.teams]
+teams = [t.team_name for t in league.teams]
+power_rankings = league.power_rankings()
+num_weeks = [i + 1 for i in range(league.current_week)]
+week_min = min(num_weeks)
+week_max = max(num_weeks)
 
+# Dataframes for display/manipulation
+# This contains the `player_df`, a large dataframe that gets cached to
+# Streamlit's cache.
+player_df = cleaning.build_player_scores(league.current_week, league)
+power_rankings_df = cleaning.build_power_rankings_df(power_rankings)
+
+
+# Title section
 st.title(f"Karen's Fantasy Outlook for {league.settings.name} ({year})")
 st.image(LOGO_URL)
 
-# Power rankings
+# Power rankings section
 st.write("## Power Rankings*")
 st.write(  # noqa:E501
     """
@@ -25,109 +39,88 @@ that way. If team A beats team C, and team C beats team D - team A has "two
 step dominance" over team D.
 """
 )
-
-power_rankings = league.power_rankings()
-power_rankings_df = cleaning.build_power_rankings_df(power_rankings)
-
 st.table(power_rankings_df)
 
-if year >= 2019:
+# Around the league section
+st.write("## Around the league")
 
-    # Around the league
-    num_teams = [i + 1 for i, _ in enumerate(league.teams)]
-    num_weeks = [i + 1 for i in range(league.current_week)]
+# Team level stats section
+st.write("### Team Level Stats")
 
-    st.write("## Around the league")
-    player_df = cleaning.build_player_scores(league.current_week, league)
-
-    # Team level stats
-    st.write("### Team Level Stats")
-    week_min = min(num_weeks)
-    week_max = max(num_weeks)
-    top_teams = 3
-
-    if week_min < week_max:
-        for_weeks_teams = st.slider(
-            "For weeks:",
-            min_value=week_min,
-            max_value=max(num_weeks),
-            value=(week_min, week_max),
-            key="weeks-teams",
-        )
-    else:
-        for_weeks_teams = (week_min, week_max)
-
-    team_summary = cleaning.build_team_summary(
-        player_df, top=top_teams, week_range=for_weeks_teams
+# If there has been more than 1 week, show a slider for week selection
+if week_min < week_max:
+    for_weeks_teams = st.slider(
+        "For weeks:",
+        min_value=week_min,
+        max_value=max(num_weeks),
+        value=(week_min, week_max),
+        key="weeks-teams",
     )
-    st.table(team_summary)
+else:
+    for_weeks_teams = (week_min, week_max)
 
-    st.write("### Player Level Stats")
+team_summary = cleaning.build_team_summary(
+    player_df, week_range=for_weeks_teams
+)
 
-    top_players = 10
-    if week_min < week_max:
-        for_weeks_players = st.slider(
-            "For weeks:",
-            min_value=week_min,
-            max_value=max(num_weeks),
-            value=(week_min, week_max),
-            key="weeks-players",
-        )
-    else:
-        for_weeks_players = (week_min, week_max)
+st.table(team_summary)
 
-    on_teams = st.multiselect("For teams:", TEAMS)
+# Player level stats section
+st.write("### Player Level Stats")
 
-    players_summary = cleaning.build_player_summary(
-        player_df,
-        top=top_players,
-        week_range=for_weeks_players,
-        on_teams=on_teams,
+# If there has been more than 1 week, show a slider for week selection
+if week_min < week_max:
+    for_weeks_players = st.slider(
+        "For weeks:",
+        min_value=week_min,
+        max_value=max(num_weeks),
+        value=(week_min, week_max),
+        key="weeks-players",
     )
-    st.table(players_summary)
+else:
+    for_weeks_players = (week_min, week_max)
 
-    # Team Journeys
+on_teams = st.multiselect("For teams:", teams)
+players_summary = cleaning.build_player_summary(
+    player_df, week_range=for_weeks_players, on_teams=on_teams,
+)
+st.table(players_summary)
 
-    st.write("## Team Journeys")
-    team_name = st.selectbox("Team:", TEAMS)
-    team = [t for t in league.teams if t.team_name == team_name][0]
-    st.write(f"### {team.team_name} ({team.wins}-{team.losses})")  # noqa:E501
-    score_df = cleaning.build_score_df(team, league.current_week)
-    team_df = cleaning.build_team_df(team, league.current_week, league)
+# Team Journeys section
 
-    # Build a paragraph of analysis.
-    unexpected_df = team_df[team_df["Projected Result"] != team_df["Result"]]
-    unexpected_outcomes = len(unexpected_df)
-    unexpected_wins = len(unexpected_df[unexpected_df["Result"] == "W"])
-    unexpected_losses = len(unexpected_df[unexpected_df["Result"] == "L"])
+st.write("## Team Journeys")
+team_name = st.selectbox("Team:", teams)
+team = [t for t in league.teams if t.team_name == team_name][0]
+st.write(f"### {team.team_name} ({team.wins}-{team.losses})")
+team_df = cleaning.build_team_df(team, league.current_week, league)
 
-    if unexpected_wins > unexpected_losses:
-        favored = "helped"
+# Build a paragraph of analysis.
+unexpected_df = team_df[team_df["Projected Result"] != team_df["Result"]]
+unexpected_outcomes = len(unexpected_df)
+unexpected_wins = len(unexpected_df[unexpected_df["Result"] == "W"])
+unexpected_losses = len(unexpected_df[unexpected_df["Result"] == "L"])
 
-    elif unexpected_wins < unexpected_losses:
-        favored = "hurt"
+if unexpected_wins > unexpected_losses:
+    favored = "helped"
 
-    else:
-        favored = "neither helped nor hurt"
-
-    TEXT = f"""
-        **{team.team_name}** currently has a record of **{team.wins}** wins and
-        **{team.losses}** losses. **{unexpected_outcomes}** of these
-        **{team.wins + team.losses}** outcomes can be considered unexpected
-        (the actual result was different than the projected result), with
-        **{unexpected_wins}** unexpected wins and **{unexpected_losses}**
-        unexpected losses.
-
-        This team has generally been **{favored}** by unexpected outcomes this
-        season.
-    """
-    st.write(TEXT)
-    fig = cleaning.build_projected_vs_actual_chart(team_df)
-
-    st.write(fig)
+elif unexpected_wins < unexpected_losses:
+    favored = "hurt"
 
 else:
-    st.write(
-        "Around the league and team journeys are only available for 2019 and "
-        "on!"
-    )
+    favored = "neither helped nor hurt"
+
+TEXT = f"""
+    **{team.team_name}** currently has a record of **{team.wins}** wins and
+    **{team.losses}** losses. **{unexpected_outcomes}** of these
+    **{team.wins + team.losses}** outcomes can be considered unexpected
+    (the actual result was different than the projected result), with
+    **{unexpected_wins}** unexpected wins and **{unexpected_losses}**
+    unexpected losses.
+
+    This team has generally been **{favored}** by unexpected outcomes this
+    season.
+"""
+st.write(TEXT)
+fig = cleaning.build_projected_vs_actual_chart(team_df)
+
+st.write(fig)
