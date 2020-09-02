@@ -10,6 +10,12 @@ Install the dependencies with:
 pip install --upgrade -r requirements.txt
 ```
 
+Install pre-commit:
+```bash
+pip install pre-commit
+pre-commit install
+```
+
 Start the local Streamlit server with:
 
 ```bash
