@@ -80,7 +80,7 @@ resource "aws_lb" "lb" {
 
 
 resource "aws_lb_target_group" "tg" {
-  port     = 80
+  port     = 443
   protocol = "HTTP"
   vpc_id   = "vpc-792b4b03"
 }
