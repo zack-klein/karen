@@ -92,8 +92,7 @@ st.write("## Team Journeys")
 team_name = st.selectbox("Team:", teams)
 team = [t for t in league.teams if t.team_name == team_name][0]
 st.write(f"### {team.team_name} ({team.wins}-{team.losses})")
-team_df = cleaning.build_team_df(team, league.current_week, league)
-
+team_df = cleaning.build_team_df_w_results(team.team_name, player_df)
 # Build a paragraph of analysis.
 unexpected_df = team_df[team_df["Projected Result"] != team_df["Result"]]
 unexpected_outcomes = len(unexpected_df)

@@ -91,107 +91,82 @@ def get_projected_points(lineup):
     return projected
 
 
-def build_team_df(team, current_week, league):
-    """
-    Build a nice clean df of a given team's data.
+def build_team_df(team_name, df):
+    team_df = df
 
-    :param Team team: Team object.
-    """
-    columns = [
-        "Index",
-        "Week",
-        "Projected Points",
-        "Points Scored",
-        "Projection Diff",
-        "Opponent Projected Score",
-        "Projected Result",
-        "Result",
-        "Lost/Won By",
-        "Opponent",
-        "Power Ranking",
-        "Power Ranking Score",
-    ]
-    team_data = []
+    team_df = (
+        df[(df["Team"] == team_name) & (df["Slot"] != "BE")]
+        .groupby(
+            ["Team", "Week", "Team ID", "Opponent", "Opponent ID"],
+            as_index=False,
+        )
+        .sum()
+    )
+    return team_df
 
-    bar = st.progress(0.0)
 
-    for i in range(1, current_week + 1):
+def build_team_df_w_results(team_name, df):
+    home_df = build_team_df(team_name, df)
 
-        print(f"Evaluating week {i}...")
-        progress = i / len([i for i in range(current_week)])
-        bar.progress(progress)
+    rows = []
+    for i, row in home_df.iterrows():
+        opponent_df = build_team_df(row["Opponent"], df)
+        opponent_df = opponent_df[opponent_df["Week"] == row["Week"]]
 
-        score = team.scores[i - 1]
-        diff = team.mov[i - 1]
-        result = "W" if diff > 0 else "L"
-        opponent = team.schedule[i - 1].team_name
+        home_projected = row["Projected Points"]
+        home_actual = row["Points"]
 
-        # Get the ranking for the current week
-        rankings = league.power_rankings(week=i)
-        for j, ranking in enumerate(rankings):
-            ranked_team = ranking[1]
+        if opponent_df.empty:
+            opponent_projected = 0
+            opponent_actual = 0
+            opponent_projected_diff = 0
+        else:
+            opponent_projected = opponent_df["Projected Points"].values[0]
+            opponent_actual = opponent_df["Points"].values[0]
+            opponent_projected_diff = opponent_df["Projection Diff"].values[0]
 
-            if ranked_team.team_id == team.team_id:
-                # league_ranking = ranked_team.standing
-                power_ranking = j
-                power_ranking_score = ranking[0]
+        if home_projected > opponent_projected:
+            projected_result = "W"
+        elif home_projected < opponent_projected:
+            projected_result = "L"
+        else:
+            projected_result = "T"
 
-        # Get the projected total
-        box_scores = league.box_scores(week=i)
-        for k, box_score in enumerate(box_scores):
-            # Figure out if this team was home or away
-            if box_score.away_team == 0:
-                box_score.away_team = box_score.home_team
-
-            elif box_score.home_team == 0:
-                box_score.home_team = box_score.away_team
-
-            if box_score.away_team.team_id == team.team_id:
-                projected = get_projected_points(box_score.away_lineup)
-                opp_projected = get_projected_points(box_score.home_lineup)
-
-                if projected > opp_projected:
-                    projected_result = "W"
-                elif projected < opp_projected:
-                    projected_result = "L"
-                else:
-                    projected_result = "T"
-
-                break
-            elif box_score.home_team.team_id == team.team_id:
-                projected = get_projected_points(box_score.home_lineup)
-                opp_projected = get_projected_points(box_score.away_lineup)
-
-                if projected > opp_projected:
-                    projected_result = "W"
-                elif projected < opp_projected:
-                    projected_result = "L"
-                else:
-                    projected_result = "T"
-
-                break
-            else:
-                pass
+        if home_actual > opponent_actual:
+            actual_result = "W"
+        elif home_actual < opponent_actual:
+            actual_result = "L"
+        else:
+            actual_result = "T"
 
         row = [
-            "",
-            i,
-            projected,
-            score,
-            score - projected,
-            opp_projected,
+            row["Week"],
+            opponent_actual,
+            opponent_projected,
+            opponent_projected_diff,
             projected_result,
-            result,
-            diff,
-            opponent,
-            power_ranking,
-            power_ranking_score,
+            actual_result,
         ]
-        team_data.append(row)
+        rows.append(row)
 
-    team_df = pd.DataFrame(team_data, columns=columns)
-    team_df.set_index("Index", inplace=True)
-    return team_df
+    opponent_scores_df_columns = [
+        "Week",
+        "Opponent Points",
+        "Opponent Projected Points",
+        "Opponent Projection Diff",
+        "Projected Result",
+        "Result",
+    ]
+
+    opponents_df = pd.DataFrame(rows, columns=opponent_scores_df_columns)
+
+    # Join the two
+    left = home_df
+    right = opponents_df
+
+    combined_df = pd.merge(left, right, how="inner", on=["Week"])
+
+    return combined_df
 
 
 def build_projected_vs_actual_chart(df):
@@ -213,7 +188,7 @@ def build_projected_vs_actual_chart(df):
     fig.add_trace(
         go.Scatter(
             x=df["Week"],
-            y=df["Points Scored"],
+            y=df["Points"],
             fill="tonexty",
             name="Actual Points",
             text=df["Result"],
@@ -226,7 +201,7 @@ def build_projected_vs_actual_chart(df):
         act_result = row["Result"]
         if proj_result != act_result:
 
-            fig.add_annotation(x=week, y=row["Points Scored"], text=act_result)
+            fig.add_annotation(x=week, y=row["Points"], text=act_result)
     return fig
 
 
