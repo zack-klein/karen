@@ -2,8 +2,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from espn_api.football import League
-
 
 def build_power_rankings_df(power_rankings):
     """
@@ -205,11 +203,6 @@ def build_projected_vs_actual_chart(df):
     return fig
 
 
-@st.cache(
-    suppress_st_warning=True,
-    show_spinner=False,
-    hash_funcs={League: lambda _: None},
-)
 def build_player_scores(current_week, league):
     """
     Get a dataframe of the league's players performance.
@@ -426,3 +419,59 @@ def build_player_summary(player_df, top=10, week_range=None, on_teams=None):
     df = pd.DataFrame(rows, columns=headers)
     df.set_index("Rank", inplace=True)
     return df
+
+
+def build_top_positions_df(
+    player_df, top=5, week_range=None, mode="Most points scored"
+):
+    """
+    Build a dataframe of the top n players at each position.
+    """
+
+    if week_range:
+        player_df = player_df[
+            (player_df["Week"] >= week_range[0])
+            & (player_df["Week"] <= week_range[1])
+        ]
+
+    positions = ["QB", "RB", "TE", "WR", "D/ST", "K"]
+    rows = []
+
+    for i in range(top):
+
+        row = []
+        row.append(i + 1)
+
+        for position in positions:
+
+            if mode == "Most points scored":
+                sort_col = "Points"
+                ascending = False
+            elif mode == "Out-performed projection":
+                sort_col = "Projection Diff"
+                ascending = False
+            elif mode == "Under-performed projection":
+                sort_col = "Projection Diff"
+                ascending = True
+
+            position_df = (
+                player_df[player_df["Position"] == position]
+                .groupby("Player Name", as_index=False)
+                .sum()
+                .sort_values(sort_col, ascending=ascending)
+            )
+
+            name = position_df["Player Name"].values[i]
+            points = round(position_df[sort_col].values[i], 2)
+
+            to_add = f"{name} ({points})"
+
+            row.append(to_add)
+
+        rows.append(row)
+
+    positions.insert(0, "Index")
+    top_positions_df = pd.DataFrame(rows, columns=positions)
+    top_positions_df.set_index("Index", inplace=True)
+
+    return top_positions_df

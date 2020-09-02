@@ -1,11 +1,26 @@
 import streamlit as st
 
+from espn_api.football import League  # noqa:F401
+
 from karen import utils, cleaning, constant
 
 
 # Global configs - should never really change
 YEARS = constant.SUPPORTED_YEARS
 LOGO_URL = constant.LOGO_URL
+
+
+# TODO: Find a fix for this. Streamlit's `cache` function makes certain
+# functions not importable by non-Streamlit processes. This is a hacky
+# workaround.
+@st.cache(
+    suppress_st_warning=True,
+    show_spinner=False,
+    hash_funcs={League: lambda _: None},
+)
+def build_player_scores(current_week, league):
+    return cleaning.build_player_scores(current_week, league)
+
 
 # User-level settings - should change with every user/session in a browser.
 year = st.sidebar.selectbox("Year:", YEARS)
@@ -19,7 +34,7 @@ week_max = max(num_weeks)
 # Dataframes for display/manipulation
 # This contains the `player_df`, a large dataframe that gets cached to
 # Streamlit's cache.
-player_df = cleaning.build_player_scores(league.current_week, league)
+player_df = build_player_scores(league.current_week, league)
 power_rankings_df = cleaning.build_power_rankings_df(power_rankings)
 
 
@@ -85,6 +100,32 @@ players_summary = cleaning.build_player_summary(
     player_df, week_range=for_weeks_players, on_teams=on_teams,
 )
 st.table(players_summary)
+
+# Position level stats section
+st.write("### Player Performance by Position")
+position_stats_types = [
+    "Most points scored",
+    "Out-performed projection",
+    "Under-performed projection",
+]
+position_stats_type = st.selectbox("Pick a statistic:", position_stats_types)
+
+# If there has been more than 1 week, show a slider for week selection
+if week_min < week_max:
+    for_weeks_positions = st.slider(
+        "For weeks:",
+        min_value=week_min,
+        max_value=max(num_weeks),
+        value=(week_min, week_max),
+        key="weeks-positions",
+    )
+else:
+    for_weeks_positions = (week_min, week_max)
+
+top_positions_df = cleaning.build_top_positions_df(
+    player_df, week_range=for_weeks_positions, mode=position_stats_type
+)
+st.table(top_positions_df)
 
 # Team Journeys section
 
