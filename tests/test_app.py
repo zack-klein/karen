@@ -14,4 +14,9 @@ class TestAppWorks(unittest.TestCase):
 
     @patch("app.boto3")
     def test_app_imports(self, boto_mock):
-        import app  # noqa:F401
+        try:
+            import app  # noqa:F401
+        except ModuleNotFoundError:
+            raise
+        finally:
+            print("Module is importable...")
