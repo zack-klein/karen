@@ -1,25 +1,13 @@
 import streamlit as st
 
-from espn_api.football import League
-
 from karen import utils, cleaning
 
 
 LOGO_URL = "https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606"  # noqa:E501
-SECRETS = utils.get_secrets()
-
 YEARS = [2020, 2019]
 
 year = st.sidebar.selectbox("Year:", YEARS)
-
-league = League(
-    league_id=503767,
-    year=year,
-    username=SECRETS["espn_username"],
-    password=SECRETS["espn_password"],
-    espn_s2=SECRETS["espn_s2"],
-    swid=SECRETS["espn_swid"],
-)
+league = utils.get_league(year)
 TEAMS = [t.team_name for t in league.teams]
 
 st.title(f"Karen's Fantasy Outlook for {league.settings.name} ({year})")

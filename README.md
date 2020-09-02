@@ -1,10 +1,25 @@
-# fantasy-football
+# karen
 
+![Karen Logo](https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606)
 
 # Developer Set up
 
-```
+Install the dependencies with:
+
+```bash
 pip install --upgrade -r requirements.txt
+```
+
+Install pre-commit:
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Start the local Streamlit server with:
+
+```bash
+streamlit run app.py
 ```
 
 ## Potential issues:
@@ -24,4 +39,16 @@ AttributeError: module 'google.protobuf.descriptor' has no attribute '_internal_
 This can be fixed by re-installing protobuf:
 ```bash
 pip install python3-protobuf
+```
+
+## Run tests locally
+
+```bash
+bash scripts/test.sh
+```
+
+OR:
+
+```bash
+python -m pytest -s
 ```
