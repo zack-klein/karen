@@ -7,4 +7,4 @@ flake8
 bandit . -r -lll
 
 echo "Running pytests..."
-python -m pytest -s
+python3 -m pytest -s
