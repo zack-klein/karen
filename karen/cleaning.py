@@ -250,6 +250,8 @@ def build_player_scores(current_week, league):
         "Slot",
         "Team",
         "Team ID",
+        "Opponent",
+        "Opponent ID",
     ]
     players = []
 
@@ -275,6 +277,13 @@ def build_player_scores(current_week, league):
 
             if away_exists:
 
+                if home_exists:
+                    opponent = box_score.home_team.team_name
+                    opponent_id = box_score.home_team.team_id
+                else:
+                    opponent = ""
+                    opponent_id = ""
+
                 for player in box_score.away_lineup:
                     row = [
                         "",
@@ -287,11 +296,20 @@ def build_player_scores(current_week, league):
                         player.slot_position,
                         box_score.away_team.team_name,
                         box_score.away_team.team_id,
+                        opponent,
+                        opponent_id,
                     ]
 
                     players.append(row)
 
             if home_exists:
+
+                if away_exists:
+                    opponent = box_score.away_team.team_name
+                    opponent_id = box_score.away_team.team_id
+                else:
+                    opponent = ""
+                    opponent_id = ""
 
                 for player in box_score.home_lineup:
                     row = [
@@ -305,6 +323,8 @@ def build_player_scores(current_week, league):
                         player.slot_position,
                         box_score.home_team.team_name,
                         box_score.home_team.team_id,
+                        opponent,
+                        opponent_id,
                     ]
 
                     players.append(row)
