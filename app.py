@@ -564,9 +564,9 @@ if year >= 2019:
         favored = "neither helped nor hurt"
 
     TEXT = f"""
-        {team.team_name} currently has a record of **{team.wins}** wins and
+        **{team.team_name}** currently has a record of **{team.wins}** wins and
         **{team.losses}** losses. **{unexpected_outcomes}** of these
-        {team.wins + team.losses} outcomes can be considered unexpected
+        **{team.wins + team.losses}** outcomes can be considered unexpected
         (the actual result was different than the projected result), with
         **{unexpected_wins}** unexpected wins and **{unexpected_losses}**
         unexpected losses.
