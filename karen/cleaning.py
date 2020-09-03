@@ -200,6 +200,14 @@ def build_projected_vs_actual_chart(df):
         if proj_result != act_result:
 
             fig.add_annotation(x=week, y=row["Points"], text=act_result)
+
+    fig.update_layout(
+        title="Unexpected Outcomes",
+        xaxis_title="Week",
+        yaxis_title="Points",
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+    )
+
     return fig
 
 
