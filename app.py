@@ -8,6 +8,9 @@ from karen import utils, cleaning, constant
 # Global configs - should never really change
 YEARS = constant.SUPPORTED_YEARS
 LOGO_URL = constant.LOGO_URL
+APP_TITLE = constant.APP_TITLE
+FAVICON = constant.FAVICON
+st.beta_set_page_config(page_title=APP_TITLE, page_icon=FAVICON, layout="wide")
 
 
 # TODO: Find a fix for this. Streamlit's `cache` function makes certain
