@@ -2,3 +2,4 @@ streamlit
 espn_api
 pandas
 plotly
+gspread

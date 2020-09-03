@@ -35,7 +35,6 @@ week_max = max(num_weeks)
 # This contains the `player_df`, a large dataframe that gets cached to
 # Streamlit's cache.
 player_df = build_player_scores(league.current_week, league)
-power_rankings_df = cleaning.build_power_rankings_df(power_rankings)
 
 
 # Title section
@@ -54,6 +53,18 @@ that way. If team A beats team C, and team C beats team D - team A has "two
 step dominance" over team D.
 """
 )
+if week_min < week_max:
+    for_week_pr = st.slider(
+        "Week:",
+        min_value=week_min,
+        max_value=max(num_weeks),
+        value=week_max,
+        key="week-pr",
+    )
+else:
+    for_week_pr = week_min
+
+power_rankings_df = cleaning.build_power_rankings_df(league, for_week_pr)
 st.table(power_rankings_df)
 
 # Around the league section

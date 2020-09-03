@@ -2,17 +2,20 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from karen import utils
 
-def build_power_rankings_df(power_rankings):
+
+def build_power_rankings_df(league, week):
     """
     Build a nice clean dataframe of the power rankings.
-
-    :param List[Tuple[float, Team]] power_rankings: A list of tuples of the
-        teams 2-step dominance score, and the team object.
     """
+
+    power_rankings = league.power_rankings(week=week)
+
     index = "Power Rank Index"
     columns = [
         "Team",
+        "Team ID",
         "Power Rank Index",
         "Power Ranking",
         "League Ranking",
@@ -38,6 +41,7 @@ def build_power_rankings_df(power_rankings):
         # Build the row
         row = [
             team.team_name,
+            team.team_id,
             "",
             i + 1,
             team.standing,
@@ -51,7 +55,68 @@ def build_power_rankings_df(power_rankings):
 
     df = pd.DataFrame(power_ranking_list, columns=columns)
     df.set_index(index, inplace=True)
-    return df
+
+    # Get the manually updated power rankings and filter it this year and week
+    power_ranking_takes = utils.get_spreadsheet_takes()
+    power_ranking_takes["Team ID"] = power_ranking_takes["Team ID"].astype(str)
+    power_ranking_takes["Year"] = power_ranking_takes["Year"].astype(str)
+    power_ranking_takes = power_ranking_takes[
+        (power_ranking_takes["Year"] == str(league.year))
+        & (power_ranking_takes["Week"] == str(week))
+    ]
+
+    # Join the two df's
+    left = df
+    right = power_ranking_takes
+    left["Team ID"] = left["Team ID"].astype(str)
+
+    merged_df = pd.merge(left, right, on=["Team ID"], how="left")
+
+    # Remove unnecessary columns
+    del merged_df["Team_y"]
+    del merged_df["Year"]
+    del merged_df["Week"]
+    del merged_df["Team ID"]
+
+    # Fill nulls
+    merged_df.fillna("", inplace=True)
+
+    # Sort the DF
+    if len(merged_df["Jake's Ranking"].unique()) == 1:
+        merged_df["Power Ranking"] = merged_df["Power Ranking"].astype(int)
+        merged_df["League Ranking"] = merged_df["League Ranking"].astype(int)
+        merged_df.sort_values(
+            ["Power Ranking", "League Ranking"], ascending=True, inplace=True
+        )
+
+    else:
+        merged_df["Jake's Ranking"] = merged_df["Jake's Ranking"].astype(int)
+        merged_df["Power Ranking"] = merged_df["Power Ranking"].astype(int)
+        merged_df["League Ranking"] = merged_df["League Ranking"].astype(int)
+        merged_df.sort_values(
+            ["Jake's Ranking", "Power Ranking", "League Ranking"],
+            ascending=True,
+            inplace=True,
+        )
+
+    # Rename the Team column
+    merged_df.rename({"Team_x": "Team"}, inplace=True)
+
+    # Finally, reoder the columns and be done!
+    order = [
+        "Team_x",
+        "Jake's Ranking",
+        "Power Ranking",
+        "League Ranking",
+        "Jake's Analysis",
+        "Record",
+        "Points Scored",
+        "Points Allowed",
+        "Point Differential",
+        "Power Ranking Score",
+    ]
+
+    return merged_df[order]
 
 
 def build_score_df(team, current_week):
