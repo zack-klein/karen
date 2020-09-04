@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 import streamlit as st
 
 from karen import utils
@@ -12,7 +13,6 @@ def build_power_rankings_df(league, week):
 
     power_rankings = league.power_rankings(week=week)
 
-    index = "Power Rank Index"
     columns = [
         "Team",
         "Team ID",
@@ -54,7 +54,6 @@ def build_power_rankings_df(league, week):
         power_ranking_list.append(row)
 
     df = pd.DataFrame(power_ranking_list, columns=columns)
-    df.set_index(index, inplace=True)
 
     # Get the manually updated power rankings and filter it this year and week
     power_ranking_takes = utils.get_spreadsheet_takes()
@@ -82,7 +81,7 @@ def build_power_rankings_df(league, week):
     merged_df.fillna("", inplace=True)
 
     # Sort the DF
-    if len(merged_df["Jake's Ranking"].unique()) == 1:
+    if len(merged_df["Jake's Ranking"].unique()) != 10:
         merged_df["Power Ranking"] = merged_df["Power Ranking"].astype(int)
         merged_df["League Ranking"] = merged_df["League Ranking"].astype(int)
         merged_df.sort_values(
@@ -99,12 +98,14 @@ def build_power_rankings_df(league, week):
             inplace=True,
         )
 
-    # Rename the Team column
-    merged_df.rename({"Team_x": "Team"}, inplace=True)
+    # Rename the Team column and set a new index
+    merged_df.set_index("Power Rank Index", inplace=True)
+    merged_df["Team"] = merged_df["Team_x"]
+    del merged_df["Team_x"]
 
     # Finally, reoder the columns and be done!
     order = [
-        "Team_x",
+        "Team",
         "Jake's Ranking",
         "Power Ranking",
         "League Ranking",
@@ -276,6 +277,31 @@ def build_projected_vs_actual_chart(df):
     return fig
 
 
+def cumulative_score(row, player_df):
+
+    current_week = row["Week"]
+
+    if current_week == min(player_df["Week"]):
+        return row["Points"]
+
+    else:
+        cumulative_score = 0
+        for i in range(current_week):
+            week = i + 1
+            filtered = player_df[
+                (player_df["Week"] == week)
+                & (player_df["Player Name"] == row["Player Name"])
+            ]
+
+            if filtered["Points"].empty:
+                weekly_score = 0
+            else:
+                weekly_score = filtered["Points"].values[0]
+
+            cumulative_score += weekly_score
+        return cumulative_score
+
+
 def build_player_scores(current_week, league):
     """
     Get a dataframe of the league's players performance.
@@ -372,8 +398,30 @@ def build_player_scores(current_week, league):
 
     df = pd.DataFrame(players, columns=columns)
     df.set_index("Index", inplace=True)
+
+    df["Cumulative Score"] = df.apply(cumulative_score, args=[df], axis=1)
+
     bar.empty()
     return df
+
+
+def build_mvp_chart(team, player_df):
+    """
+    """
+    team_df = player_df[player_df["Team"] == team]
+    team_df.sort_values("Cumulative Score", ascending=False, inplace=True)
+    fig = px.area(
+        team_df, x="Week", y="Cumulative Score", color="Player Name",
+    )
+
+    fig.update_layout(
+        title="Team MVP's",
+        xaxis_title="Week",
+        yaxis_title="Cumulative Points",
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+        showlegend=False,
+    )
+    return fig
 
 
 def build_team_summary(player_df, top=3, week_range=None):

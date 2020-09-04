@@ -176,5 +176,40 @@ TEXT = f"""
 """
 st.write(TEXT)
 fig = cleaning.build_projected_vs_actual_chart(team_df)
+mvp_fig = cleaning.build_mvp_chart(team.team_name, player_df)
 
 st.write(fig)
+
+st.write("## MVP Analysis")
+
+team_df = player_df[player_df["Team"] == team.team_name]
+team_df.sort_values("Cumulative Score", ascending=False, inplace=True)
+
+top_player = team_df["Player Name"].values[0]
+top_player_points = team_df["Cumulative Score"].values[0]
+total_points = team.points_for
+top_players_points = sum(team_df["Cumulative Score"].values[0:3])
+top_player_points_pcent = round(top_player_points / total_points, 2) * 100
+top_players_pcent = round(top_players_points / total_points, 2) * 100
+is_balanced = "top-heavy" if top_players_pcent > 50 else "balanced"
+
+MVP_TEXT = f"""
+    **{top_player}** is the MVP of **{team.team_name}** with
+    **{top_player_points}** points scored. This amounts to around
+    **{top_player_points_pcent}%** of {team.team_name}'s **{total_points}**
+    points.
+
+    All together, the top 3 players on {team.team_name} scored
+    **{top_players_points}** points, which accounts for
+    **{top_players_pcent}%** of {team.team_name}'s points, indicating a
+    **{is_balanced}** team overall (a team is top-heavy if the top 3 players
+    scored more than 50% of the team's points).
+
+    The graph below shows each players contribution to the team's total score
+    over time, with players that have a higher point contribution near the
+    bottom.
+
+"""
+
+st.write(MVP_TEXT)
+st.write(mvp_fig)
