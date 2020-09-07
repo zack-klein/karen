@@ -24,6 +24,7 @@ module "instance" {
   instance_profile  = aws_iam_instance_profile.profile.name
   public            = true
   target_group_arns = [aws_lb_target_group.tg.arn]
+  instance_type     = "t2.nano"
 }
 
 # S3 Bucket
