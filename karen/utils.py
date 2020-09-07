@@ -18,7 +18,9 @@ def get_secrets(secret_name, region="us-east-1"):
     return secrets
 
 
-def get_league(year, league_id=503767, secret_name="fantasy-football-secrets"):
+def get_league(
+    year, league_id=503767, secret_name="fantasy-football-secrets", debug=False
+):
     """
     Get an espn_api.football.League object from the espn_api.
     """
@@ -30,6 +32,7 @@ def get_league(year, league_id=503767, secret_name="fantasy-football-secrets"):
         password=secrets["espn_password"],
         espn_s2=secrets["espn_s2"],
         swid=secrets["espn_swid"],
+        debug=debug,
     )
     return league
 

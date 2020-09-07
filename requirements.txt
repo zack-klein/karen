@@ -1,5 +1,5 @@
 streamlit
-espn_api
+espn_api==0.4.2
 pandas
 plotly
 gspread
