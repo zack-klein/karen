@@ -596,3 +596,128 @@ def build_top_positions_df(
     top_positions_df.set_index("Index", inplace=True)
 
     return top_positions_df
+
+
+def get_recommendations(team_name, league):
+    """
+    Get a list of recommendations for free agent swaps.
+    """
+    fas = league.free_agents(size=200)
+    free_agents = {}
+
+    rows = []
+    for agent in fas:
+        row = []
+
+        row.append(agent.name)
+        row.append(agent.projected_points)
+        row.append(agent.position)
+        row.append(agent.posRank)
+
+        rows.append(row)
+
+        this_position_free_agents = free_agents.get(agent.position, [])
+        this_position_free_agents.append(agent)
+        free_agents[agent.position] = this_position_free_agents
+
+    # Look for recommendations for a specific team
+    recommendations = {}
+
+    team = [t for t in league.teams if t.team_name == team_name][0]
+
+    for player in team.roster:
+        candidates = free_agents[player.position]
+
+        player_projected_points = player.stats.get(
+            league.current_week, {}
+        ).get("projected_points")
+        player.projected_points = player_projected_points
+
+        # For now, don't mess with injured players
+        if player.projected_points != 0.0:
+
+            for candidate in candidates:
+                recommendation = {}
+                against_arguments = []
+                for_arguments = []
+
+                # If candidate has a higher position rank, add argue to swap
+                if candidate.posRank == [] or candidate.posRank == 0:
+                    candidate.posRank = player.posRank + 1
+
+                if player.posRank == [] or player.posRank == 0:
+                    player.posRank = candidate.posRank + 1
+
+                if candidate.posRank < player.posRank:
+                    for_arguments.append(
+                        f"{candidate.name} has a higher position rank ({candidate.posRank}) than {player.name} ({player.posRank})"  # noqa:E501
+                    )
+
+                else:
+                    against_arguments.append(
+                        f"{candidate.name} has a lower position rank ({candidate.posRank}) than {player.name} ({player.posRank})"  # noqa:E501
+                    )
+
+                # If a candidate has more projected points for this week, argue
+                # to swap
+                if (
+                    not candidate.projected_points
+                    or not player.projected_points
+                ):
+                    against_arguments.append(
+                        f"Neither {candidate.name} nor {player.name} are projected to score any points this week."  # noqa:E501
+                    )
+
+                elif candidate.projected_points > player.projected_points:
+                    for_arguments.append(
+                        f"{candidate.name} is projected to score more points this week ({candidate.projected_points}) than {player.name} ({player.projected_points})"  # noqa:E501
+                    )
+
+                else:
+                    against_arguments.append(
+                        f"{candidate.name} is projected to score fewer points this week ({candidate.projected_points}) than {player.name} ({player.projected_points})"  # noqa:E501
+                    )
+
+                # If a candidate has more points for season, argue to swap
+                player_season_points = player.stats.get(0, {}).get(
+                    "projected_points"
+                )
+                player.season_projected = player_season_points
+
+                candidate_season_points = candidate.stats.get(0, {}).get(
+                    "projected_points"
+                )
+                candidate.season_projected = candidate_season_points
+
+                if candidate.season_projected > player.season_projected:
+                    for_arguments.append(
+                        f"{candidate.name} is projected to score more points this year ({candidate.season_projected}) than {player.name} ({player.season_projected})"  # noqa:E501
+                    )
+
+                else:
+                    against_arguments.append(
+                        f"{candidate.name} is projected to score fewer points this year ({candidate.season_projected}) than {player.name} ({player.season_projected})"  # noqa:E501
+                    )
+
+                if len(against_arguments) == 0:
+                    requires_action = True
+                else:
+                    requires_action = False
+
+                arguments = ", ".join(for_arguments + against_arguments)
+
+                recommendation = {
+                    "swap_for": candidate.name,
+                    "reasons": arguments,
+                    "for_reasons": for_arguments,
+                    "against_reasons": against_arguments,
+                }
+
+                if requires_action:
+                    player_recommendations = recommendations.get(
+                        player.name, []
+                    )
+                    player_recommendations.append(recommendation)
+                    recommendations[player.name] = player_recommendations
+
+    return recommendations

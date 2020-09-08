@@ -213,3 +213,46 @@ MVP_TEXT = f"""
 
 st.write(MVP_TEXT)
 st.write(mvp_fig)
+
+
+# Free agent recommendations
+st.write("## Free Agent Recommendations (Beta)")
+st.write(
+    "Karen will only recommend free agent transactions for a team if:\n"
+    "- They have a higher position ranking (according to ESPN)\n"
+    "- They are projeted to score more points *this week*\n"
+    "- They are projected to score more points *this year*\n"
+)
+fa_team_name = st.selectbox("Team:", teams, key="fa-teams")
+fa_team = [t for t in league.teams if t.team_name == fa_team_name][0]
+
+if team:
+    import pandas as pd
+
+    fa_recommendations = cleaning.get_recommendations(
+        fa_team.team_name, league
+    )
+    if fa_recommendations:
+        recommended_players = [p for p in fa_recommendations]
+        fa_player = st.selectbox("Select a player:", recommended_players)
+
+        if fa_player:
+            recommended_actions = fa_recommendations[fa_player]
+            rows = []
+            for action in recommended_actions:
+                swap_for = action["swap_for"]
+                text = f"Swap {fa_player} for {swap_for}."
+                why = ", ".join(action["for_reasons"])
+                row = ["", text, why]
+                rows.append(row)
+
+            fa_df = pd.DataFrame(
+                rows, columns=["Index", "Recommendation", "Reasons"]
+            )
+            fa_df.set_index("Index", inplace=True)
+            st.table(fa_df)
+
+    else:
+        st.write(
+            f"No recommendations here for {fa_team.team_name} :ok_hand:ßßßßß"
+        )
