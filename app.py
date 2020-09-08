@@ -253,6 +253,4 @@ if team:
             st.table(fa_df)
 
     else:
-        st.write(
-            f"No recommendations here for {fa_team.team_name} :ok_hand:ßßßßß"
-        )
+        st.write(f"No recommendations here for {fa_team.team_name} :ok_hand:")
