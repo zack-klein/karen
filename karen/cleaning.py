@@ -700,7 +700,33 @@ def get_recommendations(team_name, league):
                     )
 
                 if len(against_arguments) == 0:
-                    requires_action = True
+                    # If fantasy pros recommends a candidate, argue for it
+                    fantasy_pros_rec = utils.get_fantasy_pros_recommendation(
+                        candidate.name, player.name
+                    )
+
+                    if fantasy_pros_rec != {}:
+
+                        player_pcnt = fantasy_pros_rec[player.name]
+                        candidate_pcnt = fantasy_pros_rec[candidate.name]
+                        fantasy_pros_url = fantasy_pros_rec["url"]
+
+                        if candidate_pcnt > player_pcnt:
+                            for_arguments.append(
+                                f"Fantasy pros would start {candidate.name} "
+                                f"({candidate_pcnt}) over {player.name} "
+                                f"({player_pcnt}) ({fantasy_pros_url})"
+                            )
+                        else:
+                            against_arguments.append(
+                                f"Fantasy pros would start {player.name} "
+                                f"({player_pcnt}) over {candidate.name} "
+                                f"({candidate_pcnt}) ({fantasy_pros_url})"
+                            )
+                    if len(against_arguments) == 0:
+                        requires_action = True
+                    else:
+                        requires_action = False
                 else:
                     requires_action = False
 

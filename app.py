@@ -219,9 +219,11 @@ st.write(mvp_fig)
 st.write("## Free Agent Recommendations (Beta)")
 st.write(
     "Karen will only recommend free agent transactions for a team if:\n"
-    "- They have a higher position ranking (according to ESPN)\n"
-    "- They are projeted to score more points *this week*\n"
-    "- They are projected to score more points *this year*\n"
+    "- The FA has a higher position ranking (according to ESPN)\n"
+    "- The FA is projeted to score more points *this week*\n"
+    "- The FA is projected to score more points *this year*\n"
+    "- [Fantasy Pros](https://www.fantasypros.com/nfl/start/) would start the "
+    "the FA"
 )
 fa_team_name = st.selectbox("Team:", teams, key="fa-teams")
 fa_team = [t for t in league.teams if t.team_name == fa_team_name][0]
