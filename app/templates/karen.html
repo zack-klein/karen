@@ -1,0 +1,104 @@
+{% extends "appbuilder/baselayout.html" %}
+{% import 'appbuilder/general/lib.html' as lib %}
+
+{% block head_css %}
+{{ super() }}
+
+{% endblock %}
+{% block content %}
+<div class="right_col" role="main">
+    <div class="row">
+        <div class="col-md-12">
+          <h1>Karen's Fantasy Outlook</h1>
+          <h3>{{ league.name }}</h3>
+        </div>
+        {% if league.power_rankings %}
+          <div class="col-md-12">
+            <h3>Power Rankings for {{ league.name }}</h3>
+            <p>*These power rankings are calculated using a two-step dominance matrix (you can read more about this methodology here). Effectively, it looks at who has beaten who, and calculates the "better" team that way. If team A beats team C, and team C beats team D - team A has "two step dominance" over team D.</p>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="dashboard_graph_power_rankings">
+                  <div style="width: 100%; min-height:400px;">
+                      {{ league.power_rankings_df|safe }}
+                  </div>
+                  <div class="clearfix"></div>
+              </div>
+          </div>
+        {% endif %}
+        <!-- Team level statistics -->
+        {% if league.team_level_stats %}
+          <div class="col-md-12">
+            <h3>Team Level Stats for {{ league.name }}</h3>
+            <p>Beep boop beep.</p>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="dashboard_graph_power_rankings">
+                {{ league.team_summary_df|safe }}
+              </div>
+          </div>
+        {% endif %}
+        <!-- Player level statistics -->
+        {% if league.player_level_stats %}
+          <div class="col-md-12">
+            <h3>Player Level Stats for {{ league.name }}</h3>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="dashboard_graph_player_level_stats">
+                {{ league.player_summary_df|safe }}
+              </div>
+          </div>
+        {% endif %}
+        <!-- Player stats by position -->
+        {% if league.player_position_stats %}
+          <div class="col-md-12">
+            <h3>Player Level Stats by position for {{ league.name }}</h3>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+              <div class="dashboard_graph_player_position_stats">
+                {{  league.top_positions_df|safe  }}
+              </div>
+          </div>
+        {% endif %}
+        <!-- Unexpected outcomes -->
+        {% if league.unexpected_outcomes %}
+          <div class="col-md-12">
+            <h3>Unexpected Outcomes in {{ league.name }}</h3>
+            <p>Beep boop beep.</p>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="dashboard_graph_foobar">
+                <div style="width: 100%; min-height:800px;">
+                </div>
+                <div class="clearfix"></div>
+            </div>
+          </div>
+        {% endif %}
+        <!-- MVP Analysis -->
+        {% if league.mvp_analysis %}
+          <div class="col-md-12">
+            <h3>MVP Analysis</h3>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="dashboard_graph_foobar">
+                <div style="width: 100%; min-height:800px;">
+                  <iframe noresize='noresize'
+                      style='position: absolute; background: transparent; width: 95%; height:100%;' src={{ league.unexpected_outcomes_url }}
+                      frameborder="0">
+                  </iframe>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        {% endif %}
+        <!-- Free Agent Recommendations -->
+        {% if league.free_agent_recs %}
+          <div class="col-md-12">
+            <h3>Free Agent Recommendations</h3>
+          </div>
+          <div class="col-md-12 col-sm-12 col-xs-12">
+            {{  league.free_agents_df|safe  }}
+          </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
