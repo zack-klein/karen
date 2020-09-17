@@ -15,6 +15,7 @@ class EspnLeague(Model):
     unexpected_outcomes = Column(Boolean)
     mvp_analysis = Column(Boolean)
     free_agent_recs = Column(Boolean)
+    team_level_analytics = Column(Boolean)
 
     def __repr__(self):
         return self.name

@@ -1,6 +1,7 @@
 bs4
-streamlit
 espn_api
+flask_appbuilder
+flask_cache
+gspread
 pandas
 plotly
-gspread

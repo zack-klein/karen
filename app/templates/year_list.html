@@ -1,0 +1,19 @@
+{% extends "appbuilder/baselayout.html" %}
+{% import 'appbuilder/general/lib.html' as lib %}
+
+{% block head_css %}
+{{ super() }}
+
+{% endblock %}
+{% block content %}
+<div class="right_col" role="main">
+    <div class="row">
+      <div class="col-md-12">
+        <h1>{{ league.name }}</h1>
+      </div>
+      {% for year in years %}
+        <a href="{{ year }}">{{ league.name }} ({{ year }})</a><br>
+      {% endfor %}
+    </div>
+</div>
+{% endblock %}

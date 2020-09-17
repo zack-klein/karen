@@ -168,4 +168,8 @@ dmypy.json
 cython_debug/
 
 *.ipynb
-*.json
+*.db
+cache/*.csv
+cache/*.json
+# app/Dashboard/*.py
+# dash_exploration.py

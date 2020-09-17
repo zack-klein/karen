@@ -5,9 +5,13 @@ from flask_appbuilder.models.sqla.interface import SQLAInterface
 from .Dashboard import Dash_App1, Dash_App2
 from .models import EspnLeague
 
-from . import app, appbuilder, db, helpers, dashfactory
+from . import appbuilder, db, dashfactory
 
-from karen import utils, cleaning
+from karen import (
+    league as karen_league,
+    constant,
+    team as karen_team,
+)
 
 
 class MyDashAppCallBack(BaseView):
@@ -45,141 +49,150 @@ appbuilder.add_link(
 class LeagueGraphView(BaseView):
     route_base = "/graphs/"
 
-    @has_access
-    @expose("demo/")
-    def demo(self):
-        dashfactory.create_demo_dash_app(app, appbuilder)
-        return self.render_template(
-            "dash.html",
-            dash_url=dashfactory.DEMO_GRAPH_URL,
-            appbuilder=appbuilder,
-        )
+    # @has_access
+    # @expose("demo/")
+    # def demo(self):
+    #     dashfactory.create_demo_dash_app(app, appbuilder)
+    #     return self.render_template(
+    #         "dash.html",
+    #         dash_url=dashfactory.DEMO_GRAPH_URL,
+    #         appbuilder=appbuilder,
+    #     )
 
-    @has_access
-    @expose("unexpected_outcomes/<string:league_name>/<string:team_name>")
-    def unexpected_outcomes(self, league_name, team_name):
-        player_df = helpers.build_player_scores_cached(league_name)
-        dashfactory.create_unexpected_outcomes_graph(
-            team_name, player_df, app, appbuilder
-        )
-        return self.render_template(
-            "dash.html",
-            dash_url=dashfactory.UNEXPECTED_OUTCOMES_GRAPH_URL,
-            appbuilder=appbuilder,
-        )
+    # @has_access
+    # @expose(
+    #     "unexpected_outcomes/<string:league_name>/<int:year>/<string:team_name>"
+    # )
+    # def unexpected_outcomes(self, league_name, year, team_name):
+    #     league = (
+    #         db.session.query(EspnLeague).filter_by(name=league_name).first()
+    #     )
+    #     league2 = karen_league.get_league(
+    #         year, league_id=league.league_id, secret_name=league.secret_name,
+    #     )
+    #     team = karen_team.get_team(team_name, year, league2)
+    #     chart = team.get_unexpected_outcomes_chart()
+    #     dashfactory.create_unexpected_outcomes_graph(
+    #         chart, team_name, league_name, year, app, appbuilder
+    #     )
+    #     url = dashfactory.UNEXPECTED_OUTCOMES_GRAPH_URL.format(
+    #         league=league_name, team=team_name, year=year,
+    #     )
+    #     return self.render_template(
+    #         "dash.html", dash_url=url, appbuilder=appbuilder,
+    #     )
 
 
 class EspnLeagueView(ModelView):
     datamodel = SQLAInterface(EspnLeague)
 
 
-db.create_all()
-
-
 class LeagueView(BaseView):
-    route_base = "/league/"
+    route_base = "/leagues/"
     default_view = "dummy"
 
     @has_access
     @expose("/")
     def dummy(self):
-        add_league_views()
         return redirect("/")
 
     @has_access
     @expose("/<string:league_name>/")
-    def league(self, league_name):
+    def leagues(self, league_name):
+        league = (
+            db.session.query(EspnLeague).filter_by(name=league_name).first()
+        )
+        return self.render_template(
+            "year_list.html", years=constant.SUPPORTED_YEARS, league=league,
+        )
+
+    @has_access
+    @expose("/<string:league_name>/<int:year>")
+    def league(self, league_name, year):
         # Grab the league info from the database
         league = (
             db.session.query(EspnLeague).filter_by(name=league_name).first()
         )
-
-        # Set up the league object
-        league_obj = utils.get_league(
-            2020, league_id=league.league_id, secret_name=league.secret_name,
+        league2 = karen_league.get_league(
+            year, league_id=league.league_id, secret_name=league.secret_name,
         )
-        teams = [t.team_name for t in league_obj.teams]
-        league.league_obj = league_obj
-
-        # Grab the power rankings dataframe
-        power_rankings_df = helpers.build_power_rankings_df_cached(
-            league_obj, 1
-        )
-        league.power_rankings_df = power_rankings_df.to_html(
+        # Format tables into HTML
+        league.year = league2.year
+        league.power_rankings_df = league2.power_rankings_df.to_html(
             classes="table table-bordered", header="true", index=False
         )
-
-        # Grab the player_df. This is the BIG BOY.
-        player_df = helpers.build_player_scores_cached(
-            league_name, current_week=league_obj.current_week
-        )
-
-        league_obj.player_df = player_df
-
-        # Grab the team summary df
-        team_summary_df = cleaning.build_team_summary(
-            player_df, week_range=(1, 15)
-        )
-        league.team_summary_df = team_summary_df.to_html(
+        league.team_summary_df = league2.team_summary_df.to_html(
             classes="table table-bordered", header="true", index=False
         )
-
-        # Grab the player summary df
-        player_summary_df = cleaning.build_player_summary(
-            player_df, week_range=(1, 15), on_teams=teams,
-        )
-        league.player_summary_df = player_summary_df.to_html(
+        league.player_summary_df = league2.player_summary_df.to_html(
             classes="table table-bordered", header="true", index=False
         )
-
-        # Grab the player summary by position
-        # position_stats_types = [
-        #     "Most points scored",
-        #     "Out-performed projection",
-        #     "Under-performed projection",
-        # ]
-        top_positions_df = cleaning.build_top_positions_df(
-            player_df, week_range=(1, 15), mode="Most points scored",
-        )
-        league.top_positions_df = top_positions_df.to_html(
+        league.top_positions_df = league2.top_positions_df.to_html(
             classes="table table-bordered", header="true", index=False
         )
+        league.teams = league2.teams
 
         # Unexpected outcomes dash url
         league.unexpected_outcomes_url = dashfactory.DEMO_GRAPH_URL
 
-        # Grab the free agents recommendations
-        free_agents_df = cleaning.get_free_agents_df(
-            "Golladay Inn", league_obj
-        )
-        if free_agents_df is not None:
-            free_agents_df = free_agents_df.to_html(
-                classes="table table-bordered", header="true", index=False
-            )
-        else:
-            free_agents_df = "<p>Woah there, no recommendations found!</p>"
-        league.free_agents_df = free_agents_df
-
         return self.render_template(
-            "karen.html", appbuilder=appbuilder, league=league,
+            "league.html", appbuilder=appbuilder, league=league,
         )
+
+    @has_access
+    @expose("/<string:league_name>/<int:year>/teams/<string:team_name>")
+    def team(self, league_name, year, team_name):
+        """
+        """
+        league = (
+            db.session.query(EspnLeague).filter_by(name=league_name).first()
+        )
+        league2 = karen_league.get_league(
+            year, league_id=league.league_id, secret_name=league.secret_name,
+        )
+        team = karen_team.get_team(team_name, year, league2)
+
+        # Unexpected outcomes URL
+        unexpected_outcomes_url = dashfactory.UNEXPECTED_OUTCOMES_GRAPH_URL.format(  # noqa:E501
+            league=league_name, team=team_name, year=year,
+        )
+
+        # # Grab the free agents recommendations
+        # free_agents_df = cleaning.get_free_agents_df(
+        #     "Golladay Inn", league_obj
+        # )
+        # if free_agents_df is not None:
+        #     free_agents_df = free_agents_df.to_html(
+        #         classes="table table-bordered", header="true", index=False
+        #     )
+        # else:
+        #     free_agents_df = "<p>Woah there, no recommendations found!</p>"
+        # league.free_agents_df = free_agents_df
+        return self.render_template(
+            "team.html",
+            league=league,
+            team=team,
+            unexpected_outcomes_url=unexpected_outcomes_url,
+        )
+
+
+db.create_all()
 
 
 def add_league_views():
     leagues = db.session.query(EspnLeague).all()
     for league in leagues:
+        # for year in constant.SUPPORTED_YEARS:
         appbuilder.add_link(
             f"{league.name}",
-            href=f"/league/{league.name}/",
+            href=f"/leagues/{league.name}/",
             category="Leagues",
             category_icon="fa-flag-o",
         )
 
 
 add_league_views()
-appbuilder.add_view(
-    LeagueView, "Refresh", category="Leagues", icon="fa-refresh"
-)
+appbuilder.add_view_no_menu(LeagueView)
 appbuilder.add_view_no_menu(MyDashAppGraph())
 appbuilder.add_view_no_menu(LeagueGraphView())
 appbuilder.add_link(
@@ -189,4 +202,6 @@ appbuilder.add_link(
     category="Dash Demo",
     category_icon="fa-list",
 )
-appbuilder.add_view(EspnLeagueView, "ESPN Leagues")
+appbuilder.add_view(
+    EspnLeagueView, "ESPN", category="Integrations", category_icon="fa fa-plug"
+)
