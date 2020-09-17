@@ -747,3 +747,25 @@ def get_recommendations(team_name, league):
                     recommendations[player.name] = player_recommendations
 
     return recommendations
+
+
+def get_free_agents_df(fa_team_name, league):
+    fa_team = [t for t in league.teams if t.team_name == fa_team_name][0]
+
+    fa_recommendations = get_recommendations(fa_team.team_name, league)
+    recommended_players = [p for p in fa_recommendations]
+    rows = []
+
+    for player in recommended_players:
+        recommended_actions = fa_recommendations[player]
+
+        for action in recommended_actions:
+            swap_for = action["swap_for"]
+            text = f"Swap {player} for {swap_for}."
+            why = ", ".join(action["for_reasons"])
+            row = [f"{player}-{swap_for}", text, why]
+            rows.append(row)
+
+    fa_df = pd.DataFrame(rows, columns=["Index", "Recommendation", "Reasons"])
+    fa_df.set_index("Index", inplace=True)
+    return fa_df
