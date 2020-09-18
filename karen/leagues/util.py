@@ -1,7 +1,8 @@
 from karen.leagues.espn import EspnLeague
+from karen.leagues.yahoo import YahooLeague
 
 
-PLATFORMS = {"ESPN": EspnLeague}
+PLATFORMS = {"ESPN": EspnLeague, "Yahoo": YahooLeague}
 
 
 def get_league(
