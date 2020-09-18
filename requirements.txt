@@ -1,6 +1,8 @@
 bs4
-streamlit
 espn_api
+gspread
 pandas
 plotly
-gspread
+streamlit
+yahoo_fantasy_api
+yahoo_oauth
