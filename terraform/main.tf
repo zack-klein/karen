@@ -135,6 +135,20 @@ resource "aws_route53_record" "cert" {
   zone_id         = data.aws_route53_zone.zone.zone_id
 }
 
+resource "aws_acm_certificate" "cert2" {
+  domain_name       = "*.karens-fantasy-outlook.com"
+  validation_method = "DNS"
+}
+
+resource "aws_route53_record" "cert2" {
+  allow_overwrite = true
+  name            = aws_acm_certificate.cert2.domain_validation_options[0].resource_record_name
+  records         = [aws_acm_certificate.cert2.domain_validation_options[0].resource_record_value]
+  ttl             = 60
+  type            = aws_acm_certificate.cert2.domain_validation_options[0].resource_record_type
+  zone_id         = data.aws_route53_zone.zone.zone_id
+}
+
 
 resource "aws_route53_record" "www" {
   zone_id = data.aws_route53_zone.zone.zone_id
