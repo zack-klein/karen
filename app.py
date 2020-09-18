@@ -2,7 +2,7 @@ import streamlit as st
 
 from espn_api.football import League  # noqa:F401
 
-from karen import cleaning, constant, get_league
+from karen import constant, get_league
 from karen.leagues.espn import EspnLeague
 
 
@@ -12,18 +12,6 @@ LOGO_URL = constant.LOGO_URL
 APP_TITLE = constant.APP_TITLE
 FAVICON = constant.FAVICON
 st.beta_set_page_config(page_title=APP_TITLE, page_icon=FAVICON, layout="wide")
-
-
-# TODO: Find a fix for this. Streamlit's `cache` function makes certain
-# functions not importable by non-Streamlit processes. This is a hacky
-# workaround.
-@st.cache(
-    suppress_st_warning=True,
-    show_spinner=False,
-    hash_funcs={League: lambda _: None},
-)
-def build_player_scores(current_week, league):
-    return cleaning.build_player_scores(current_week, league)
 
 
 @st.cache(
