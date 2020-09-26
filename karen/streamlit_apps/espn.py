@@ -30,7 +30,8 @@ def build_app(
     full_league = get_league_cached("ESPN", league_id, year, secret_name)
     league = full_league.espn_league
     teams = [t.team_name for t in league.teams]
-    num_weeks = [i + 1 for i in range(league.current_week)]
+    num_weeks = [i + 1 for i in range(league.current_week - 1)]
+
     week_min = min(num_weeks)
     week_max = max(num_weeks)
 
@@ -58,8 +59,8 @@ def build_app(
         for_week_pr = st.slider(
             "Week:",
             min_value=week_min,
-            max_value=max(num_weeks),
-            value=week_max,
+            max_value=max([i + 1 for i in range(league.current_week)]),
+            value=max([i + 1 for i in range(league.current_week)]),
             key="week-pr",
         )
     else:
