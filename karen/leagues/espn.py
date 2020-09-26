@@ -43,7 +43,10 @@ class EspnLeague(BaseLeague):
             self.connect()
 
         if not week:
-            week = self.espn_league.current_week
+            if self.espn_league.current_week < 15:
+                week = self.espn_league.current_week - 1
+            else:
+                week = self.espn_league.current_week
 
         player_df = cleaning.build_player_scores(week, self.espn_league)
 

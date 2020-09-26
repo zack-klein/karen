@@ -473,8 +473,8 @@ def build_team_summary(player_df, top=3, week_range=None):
 
     headers = [
         "Rank",
-        "Most Over Projected",
         "Most Under Projected",
+        "Most Over Projected",
         "Most Points Left on Bench",
         "Least Points left on Bench",
     ]
