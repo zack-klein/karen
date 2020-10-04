@@ -3,6 +3,7 @@ espn_api
 gspread
 pandas
 plotly
+scipy
 streamlit
 yahoo_fantasy_api
 yahoo_oauth
