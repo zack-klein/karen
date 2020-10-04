@@ -3,6 +3,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
 
+from scipy.stats import zscore
+
 from karen import utils
 
 
@@ -769,3 +771,113 @@ def get_free_agents_df(fa_team_name, league):
     fa_df = pd.DataFrame(rows, columns=["Index", "Recommendation", "Reasons"])
     fa_df.set_index("Index", inplace=True)
     return fa_df
+
+
+def get_player_analysis_chart(player_name, df):
+    # Player Level
+    player = df[df["Player Name"] == player_name]
+    # points = sum(player["Points"])
+    # projected = sum(player["Projected Points"])
+    # diff = sum(player["Projection Diff"])
+    position = player["Position"].unique()[0]
+
+    # League Level
+    grouped = df.groupby(by=["Player Name", "Position"]).sum()
+
+    # Zscores and aggregate
+    zscores = (
+        df.groupby(by=["Player Name", "Position"])
+        .sum()
+        .apply(zscore)[["Points", "Projected Points", "Projection Diff"]]
+    )
+    zscores.columns = ["Points_z", "Projected Points_z", "Projection Diff_z"]
+    zscores.query("Position == 'RB'").sort_values("Points_z", ascending=True)
+    left = grouped
+    right = zscores
+    merged = left.merge(right, on=["Player Name", "Position"])
+    del merged["Week"]
+    merged.sort_values(by="Projection Diff_z", ascending=False)
+
+    # Grouped by week
+    weekly_grouped = (
+        df.query(f"Position == '{position}'")[
+            ["Week", "Points", "Projected Points", "Projection Diff"]
+        ]
+        .groupby("Week")
+        .mean()
+    )
+    weekly_grouped.columns = [
+        "League Average Points",
+        "League Average Projected",
+        "League Average Projection Diff",
+    ]
+
+    # 3 line graphs:
+    # - 1. This player's points vs. league average (by position?)
+    # - 2. This player's projection vs. league average (by position?)
+    # - 3. This player's projection diff vs. league average (by position?)
+    merged_player = player.merge(weekly_grouped, on="Week")
+
+    last_week_performance = merged_player[
+        merged_player["Week"] == max(merged_player["Week"])
+    ]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=merged_player["Week"],
+            y=merged_player["League Average Points"],
+            fill="tozeroy",
+            name="League Average Points",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=merged_player["Week"],
+            y=merged_player["Points"],
+            name=f"{player_name.title()}'s Points",
+            text=merged_player["Points"],
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=merged_player["Week"],
+            y=merged_player["Projected Points"],
+            name=f"{player_name.title()}'s Projected Points",
+            text=merged_player["Projected Points"],
+        )
+    )
+
+    fig.add_annotation(
+        x=max(last_week_performance["Week"]),
+        y=max(last_week_performance["Points"]),
+        text=f"{player_name}",
+        showarrow=True,
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+        align="center",
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+    )
+
+    fig.add_annotation(
+        x=max(last_week_performance["Week"]),
+        y=max(last_week_performance["League Average Points"]),
+        text=f"Average points for {position}'s",
+        showarrow=True,
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+        align="center",
+        arrowhead=2,
+        arrowsize=1,
+        arrowwidth=2,
+    )
+
+    fig.update_layout(
+        title=f"{player_name}'s Points",
+        xaxis_title="Week",
+        yaxis_title="Points",
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+        width=900,
+    )
+    return fig

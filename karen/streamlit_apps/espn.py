@@ -162,8 +162,19 @@ def build_app(
     st.write(team.mvp_analysis_text)
     st.write(team.mvp_analysis_chart)
 
+    # Player Explorer
+    st.write("## Player Explorer (Beta)")
+    players = list(
+        full_league.player_df.sort_values("Cumulative Score", ascending=False)[
+            "Player Name"
+        ].unique()
+    )
+    player = st.selectbox("Pick a player:", players)
+    full_league.build_player_analysis_chart(player)
+    st.write(full_league.player_analysis_chart)
+
     # Free agent recommendations
-    st.write("## Free Agent Recommendations (Beta)")
+    st.write("## Free Agent Recommendations")
     st.write(
         "Karen will only recommend free agent transactions for a team if:\n"
         "- The FA has a higher position ranking (according to ESPN)\n"

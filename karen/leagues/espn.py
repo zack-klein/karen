@@ -22,6 +22,7 @@ class EspnLeague(BaseLeague):
         self.player_summary_df = None
         self.top_positions_df = None
         self.teams = None
+        self.player_analysis_chart = None
 
     def connect(self):
         secrets = utils.get_secrets(self.secret_name)
@@ -118,3 +119,12 @@ class EspnLeague(BaseLeague):
             )
         else:
             return EspnTeam(team_name, self.year, self)
+
+    def build_player_analysis_chart(self, player_name):
+
+        if not self.espn_league:
+            self.connect()
+
+        chart = cleaning.get_player_analysis_chart(player_name, self.player_df)
+
+        self.player_analysis_chart = chart
