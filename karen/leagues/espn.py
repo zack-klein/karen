@@ -23,6 +23,7 @@ class EspnLeague(BaseLeague):
         self.top_positions_df = None
         self.teams = None
         self.player_analysis_chart = None
+        self.luck_df = None
 
     def connect(self):
         secrets = utils.get_secrets(self.secret_name)
@@ -128,3 +129,28 @@ class EspnLeague(BaseLeague):
         chart = cleaning.get_player_analysis_chart(player_name, self.player_df)
 
         self.player_analysis_chart = chart
+
+    def build_luck_df(self):
+        self.luck_df = cleaning.build_luck_df(self.player_df)
+
+    def luckiest(self):
+        df = (
+            self.luck_df.groupby(["Team"], as_index=False)
+            .sum()[["Team", "Lucky Wins"]]
+            .sort_values(by=["Lucky Wins", "Team"], ascending=False)
+        )
+        df.set_index("Team", inplace=True)
+        return df
+
+    def unluckiest(self):
+        df = (
+            self.luck_df.groupby(["Team"], as_index=False)
+            .sum()[["Team", "Unlucky Losses"]]
+            .sort_values(by=["Unlucky Losses", "Team"], ascending=False)
+        )
+        df.set_index("Team", inplace=True)
+        return df
+
+    def build_team_luck_chart(self, team_name):
+        chart = cleaning.build_team_luck_chart(team_name, self.luck_df)
+        return chart

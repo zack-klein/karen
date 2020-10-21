@@ -881,3 +881,152 @@ def get_player_analysis_chart(player_name, df):
         width=900,
     )
     return fig
+
+
+def luck(row, return_val="lucky"):
+    won = row["Won"]
+    points = row["Points"]
+    avg_points = row["League Points"]
+
+    if won and points < avg_points:
+        lucky = 1
+        unlucky = 0
+
+    elif not won and points > avg_points:
+        lucky = 0
+        unlucky = 1
+
+    else:
+        lucky = 0
+        unlucky = 0
+
+    if return_val == "lucky":
+        return lucky
+    elif return_val == "unlucky":
+        return unlucky
+
+
+def build_luck_df(df):
+    """
+    Build a dataframe of Lucky and Unlucky teams.
+    """
+    # Grab the weekly average of points for the league
+    weekly_averages_df = (
+        df[df["Slot"] != "BE"]
+        .groupby(["Week", "Team"], as_index=False)
+        .sum()
+        .groupby(["Week"])
+        .mean()[["Points"]]
+    )
+    weekly_averages_df["League Points"] = weekly_averages_df["Points"]
+    del weekly_averages_df["Points"]
+
+    # Grab each team's points
+    team_points_df = (
+        df[df["Slot"] != "BE"]
+        .groupby(["Week", "Team", "Opponent"], as_index=False)
+        .sum()[["Week", "Team", "Points", "Opponent"]]
+    )
+    team_points_df["Team Points"] = team_points_df["Points"]
+    del team_points_df["Points"]
+    # Self join to get opponent points
+    w_opponent_score = team_points_df.merge(
+        team_points_df[["Week", "Opponent", "Team Points"]],
+        left_on=["Week", "Team"],
+        right_on=["Week", "Opponent"],
+    )
+    w_opponent_score["Won"] = (
+        w_opponent_score["Team Points_x"] > w_opponent_score["Team Points_y"]
+    )
+    w_opponent_score["Opponent"] = w_opponent_score["Opponent_x"]
+    w_opponent_score["Points"] = w_opponent_score["Team Points_x"]
+    w_opponent_score["Opponent Points"] = w_opponent_score["Team Points_y"]
+    del w_opponent_score["Team Points_x"]
+    del w_opponent_score["Team Points_y"]
+    del w_opponent_score["Opponent_x"]
+    del w_opponent_score["Opponent_y"]
+    teams_df = w_opponent_score[
+        ["Week", "Team", "Opponent", "Points", "Opponent Points", "Won"]
+    ]
+
+    # Join them together
+    joined_df = teams_df.merge(weekly_averages_df, on=["Week"])
+
+    joined_df["Lucky Wins"] = joined_df.apply(luck, axis=1)
+    joined_df["Unlucky Losses"] = joined_df.apply(
+        luck, axis=1, return_val="unlucky"
+    )
+    return joined_df
+
+
+def build_team_luck_chart(team_name, luck_df):
+
+    luck_df_team = luck_df[luck_df["Team"] == team_name]
+
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=luck_df_team["Week"],
+            y=luck_df_team["Points"],
+            name=f"{team_name}'s Points",
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=luck_df_team["Week"],
+            y=luck_df_team["Opponent Points"],
+            name=f"Opponent's Points",
+            text=f"Opponent's Points",
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=luck_df_team["Week"],
+            y=luck_df_team["League Points"],
+            fill="tozeroy",
+            name=f"League Average Points",
+            text=f"League Average Points",
+        )
+    )
+
+    for i, row in luck_df_team.iterrows():
+
+        if row["Lucky Wins"] != 0:
+            x = row["Week"]
+            y = row["Points"]
+            fig.add_annotation(
+                x=x,
+                y=y,
+                text="Lucky win!!!",
+                showarrow=True,
+                font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+                align="center",
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+            )
+
+        elif row["Unlucky Losses"] != 0:
+            x = row["Week"]
+            y = row["Points"]
+            fig.add_annotation(
+                x=x,
+                y=y,
+                text="Unlucky loss!",
+                showarrow=True,
+                font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+                align="center",
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=2,
+            )
+
+    fig.update_layout(
+        title=f"{team_name}'s Lucky Wins & Unlucky Losses",
+        xaxis_title="Week",
+        yaxis_title="Points",
+        font=dict(family="IBM Plex Sans", size=14, color="#262730"),
+        width=900,
+    )
+    return fig

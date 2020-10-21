@@ -23,6 +23,7 @@ def build_app(
         league = get_league(platform, league_id, year, secret_name)
         league.connect()
         league.build_player_df()
+        league.build_luck_df()
         return league
 
     # User-level settings - should change with every user/session in a browser.
@@ -71,6 +72,13 @@ def build_app(
 
     # Around the league section
     st.write("## Around the league")
+    st.write("### Lucky and Unlucky Teams (Beta)")
+
+    st.dataframe(full_league.luckiest())
+    st.dataframe(full_league.unluckiest())
+
+    luck_team_name = st.selectbox("Team:", teams, key="luck-teams")
+    st.write(full_league.build_team_luck_chart(luck_team_name))
 
     # Team level stats section
     st.write("### Team Level Stats")
@@ -163,7 +171,7 @@ def build_app(
     st.write(team.mvp_analysis_chart)
 
     # Player Explorer
-    st.write("## Player Explorer (Beta)")
+    st.write("## Player Explorer")
     players = list(
         full_league.player_df.sort_values("Cumulative Score", ascending=False)[
             "Player Name"
