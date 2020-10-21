@@ -975,8 +975,8 @@ def build_team_luck_chart(team_name, luck_df):
         go.Scatter(
             x=luck_df_team["Week"],
             y=luck_df_team["Opponent Points"],
-            name=f"Opponent's Points",
-            text=f"Opponent's Points",
+            name="Opponent's Points",
+            text="Opponent's Points",
         )
     )
 
@@ -985,8 +985,8 @@ def build_team_luck_chart(team_name, luck_df):
             x=luck_df_team["Week"],
             y=luck_df_team["League Points"],
             fill="tozeroy",
-            name=f"League Average Points",
-            text=f"League Average Points",
+            name="League Average Points",
+            text="League Average Points",
         )
     )
 
