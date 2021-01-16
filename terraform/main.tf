@@ -15,7 +15,7 @@ provider "aws" {
 # Instance module
 
 module "instance" {
-  source            = "github.com/zack-klein/ec2-instance"
+  source            = "github.com/zack-klein/ec2-instance?ref=0.1.0"
   instance_name     = "fantasy-football"
   user_data_path    = "./user-data.sh"
   vpc_id            = "vpc-792b4b03"
