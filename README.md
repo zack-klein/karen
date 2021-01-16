@@ -2,6 +2,8 @@
 
 ![Karen Logo](https://vignette.wikia.nocookie.net/spongebob/images/1/18/Karen-blue-form-stock-art.png/revision/latest?cb=20200317150606)
 
+:warning: I took Karen down following the end of the 2020 Fantasy season, but she'll be back next year!
+
 # Developer Set up
 
 Install the dependencies with:
